@@ -11,9 +11,6 @@ const driver = neo4j.driver(
   neo4j.auth.basic('neo4j', 'ISuU9wx1hOjcwH5XRO7PNSdQFElfKEPbuFvUzxpymzM')
 );
 
-
-
-
 // Cadastrar cliente
 app.post('/add-client', async (req, res) => {
   const { name, age, gender } = req.body;
@@ -72,9 +69,11 @@ app.post('/recommendations', async (req, res) => {
   const session = driver.session();
   try {
     const result = await session.run(
-      `MATCH (c:Client {name: $clientName})-[:VISITED]->(ci:City)<-[:VISITED]-(other:Client)-[:VISITED]->(rec:City)
-       WHERE c.gender = other.gender OR abs(c.age - other.age) <= 5
-       RETURN DISTINCT rec.name AS city, rec.country AS country LIMIT 5`,
+      `MATCH (c:Client {name: $clientName})-[:VISITED]->(:City)<-[:VISITED]-(other:Client)-[:VISITED]->(rec:City)
+       WHERE (c.gender = other.gender OR abs(c.age - other.age) <= 5)
+         AND NOT (c)-[:VISITED]->(rec)
+       RETURN DISTINCT rec.name AS city, rec.country AS country
+       LIMIT 5`,
       { clientName }
     );
     const recommendations = result.records.map(r => ({
